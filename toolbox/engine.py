@@ -41,6 +41,8 @@ def cycles_init(render_samples: int):
     bpy.context.scene.cycles.glossy_bounces = 1
     bpy.context.scene.cycles.transparent_max_bounces = 3
     bpy.context.scene.cycles.transmission_bounces = 3
-    bpy.context.scene.cycles.filter_width = 0.01
+    bpy.context.scene.cycles.filter_width = 1
     bpy.context.scene.cycles.use_denoising = True
     bpy.context.scene.render.film_transparent = True
+    bpy.context.scene.cycles.pixel_filter_type = 'BLACKMAN_HARRIS'
+    # bpy.context.preferences.addons["cycles"].preferences.compute_device_type = "CUDA"

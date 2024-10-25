@@ -7,6 +7,10 @@ import mathutils
 
 from .util import get_local2world_mat
 
+def make_output_dir(output_dir: str, name: str):
+    output_dir = os.path.join(output_dir, name)
+    os.makedirs(output_dir, exist_ok=True)
+    return output_dir
 
 def set_color_output(
     width: int,
@@ -22,7 +26,7 @@ def set_color_output(
     scene.render.image_settings.color_mode = "RGBA"
     scene.render.image_settings.color_depth = "16"
     scene.render.film_transparent = True
-    scene.render.filepath = os.path.join(output_dir, file_prefix)
+    scene.render.filepath = os.path.join(make_output_dir(output_dir, "color"), file_prefix)
 
 
 def enable_normals_output(output_dir: Optional[str] = "", file_prefix: str = "normal_"):
@@ -124,7 +128,7 @@ def enable_normals_output(output_dir: Optional[str] = "", file_prefix: str = "no
         tree.links.new(add.outputs["Value"], combine_rgba.inputs[output_channel])
 
     normal_file_output = tree.nodes.new("CompositorNodeOutputFile")
-    normal_file_output.base_path = output_dir
+    normal_file_output.base_path = make_output_dir(output_dir, "normal")
     normal_file_output.format.file_format = "OPEN_EXR"
     normal_file_output.format.color_mode = "RGBA"
     normal_file_output.format.color_depth = "32"
@@ -147,7 +151,7 @@ def enable_depth_output(output_dir: Optional[str] = "", file_prefix: str = "dept
     bpy.context.view_layer.use_pass_z = True
 
     depth_output = tree.nodes.new("CompositorNodeOutputFile")
-    depth_output.base_path = output_dir
+    depth_output.base_path = make_output_dir(output_dir, "depth")
     depth_output.name = "DepthOutput"
     depth_output.format.file_format = "OPEN_EXR"
     depth_output.format.color_depth = "32"
@@ -173,7 +177,7 @@ def enable_albedo_output(output_dir: Optional[str] = "", file_prefix: str = "alb
     tree.links.new(rl.outputs["Alpha"], alpha_albedo.inputs["Alpha"])
 
     albedo_file_output = tree.nodes.new(type="CompositorNodeOutputFile")
-    albedo_file_output.base_path = output_dir
+    albedo_file_output.base_path = make_output_dir(output_dir, "albedo")
     albedo_file_output.file_slots[0].use_node_format = True
     albedo_file_output.format.file_format = "PNG"
     albedo_file_output.format.color_mode = "RGBA"
@@ -184,6 +188,7 @@ def enable_albedo_output(output_dir: Optional[str] = "", file_prefix: str = "alb
 
 
 def enable_pbr_output(output_dir, attr_name, color_mode="RGBA", file_prefix: str = ""):
+
     if file_prefix == "":
         file_prefix = attr_name.lower().replace(" ", "-") + "_"
 
@@ -223,7 +228,7 @@ def enable_pbr_output(output_dir, attr_name, color_mode="RGBA", file_prefix: str
         rl = tree.nodes["Render Layers"]
 
     roughness_file_output = tree.nodes.new(type="CompositorNodeOutputFile")
-    roughness_file_output.base_path = output_dir
+    roughness_file_output.base_path = make_output_dir(output_dir, attr_name)
     roughness_file_output.file_slots[0].use_node_format = True
     roughness_file_output.format.file_format = "PNG"
     roughness_file_output.format.color_mode = color_mode
@@ -237,3 +242,92 @@ def enable_pbr_output(output_dir, attr_name, color_mode="RGBA", file_prefix: str
     tree.links.new(rl.outputs["Alpha"], roughness_alpha.inputs["Alpha"])
 
     links.new(roughness_alpha.outputs["Image"], roughness_file_output.inputs["Image"])
+
+
+def enable_position_output(output_dir: Optional[str] = "", file_prefix: str = "position_"):
+    bpy.context.scene.render.use_compositing = True
+    bpy.context.scene.use_nodes = True
+
+    tree = bpy.context.scene.node_tree
+    links = tree.links
+
+    if "Render Layers" not in tree.nodes:
+        rl = tree.nodes.new("CompositorNodeRLayers")
+    else:
+        rl = tree.nodes["Render Layers"]
+    bpy.context.view_layer.use_pass_position = True
+
+    position_output = tree.nodes.new("CompositorNodeOutputFile")
+    position_output.base_path = make_output_dir(output_dir, "position")
+    position_output.name = "PositionOutput"
+    position_output.format.file_format = "OPEN_EXR"
+    position_output.format.color_depth = "32"
+    position_output.file_slots.values()[0].path = file_prefix
+
+    links.new(rl.outputs["Position"], position_output.inputs["Image"])
+
+def enable_uv_output(output_dir: Optional[str] = "", file_prefix: str = "UV_"):
+    bpy.context.scene.render.use_compositing = True
+    bpy.context.scene.use_nodes = True
+
+    tree = bpy.context.scene.node_tree
+    links = tree.links
+
+    if "Render Layers" not in tree.nodes:
+        rl = tree.nodes.new("CompositorNodeRLayers")
+    else:
+        rl = tree.nodes["Render Layers"]
+    bpy.context.view_layer.use_pass_uv = True
+
+    uv_output = tree.nodes.new("CompositorNodeOutputFile")
+    uv_output.base_path = make_output_dir(output_dir, "UV")
+    uv_output.name = "UVOutput"
+    uv_output.format.file_format = "OPEN_EXR"
+    uv_output.format.color_depth = "32"
+    uv_output.file_slots.values()[0].path = file_prefix
+
+    links.new(rl.outputs["UV"], uv_output.inputs["Image"])
+
+def enable_alpha_output(output_dir: Optional[str] = "", file_prefix: str = "alpha_"):
+    bpy.context.scene.render.use_compositing = True
+    bpy.context.scene.use_nodes = True
+
+    tree = bpy.context.scene.node_tree
+    links = tree.links
+
+    if "Render Layers" not in tree.nodes:
+        rl = tree.nodes.new("CompositorNodeRLayers")
+    else:
+        rl = tree.nodes["Render Layers"]
+
+    alpha_output = tree.nodes.new("CompositorNodeOutputFile")
+    alpha_output.base_path = make_output_dir(output_dir, "alpha")
+    alpha_output.name = "AlphaOutput"
+    alpha_output.format.file_format = "PNG"
+    alpha_output.format.color_depth = "8"
+    alpha_output.file_slots.values()[0].path = file_prefix
+
+    links.new(rl.outputs["Alpha"], alpha_output.inputs["Image"])
+
+def enable_world_normal_output(output_dir: Optional[str] = "", file_prefix: str = "world_normal_"):
+    bpy.context.scene.render.use_compositing = True
+    bpy.context.scene.use_nodes = True
+
+    tree = bpy.context.scene.node_tree
+    links = tree.links
+
+    if "Render Layers" not in tree.nodes:
+        rl = tree.nodes.new("CompositorNodeRLayers")
+    else:
+        rl = tree.nodes["Render Layers"]
+    bpy.context.view_layer.use_pass_normal = True
+
+    world_normal_output = tree.nodes.new("CompositorNodeOutputFile")
+    world_normal_output.base_path = make_output_dir(output_dir, "world_normal")
+    world_normal_output.name = "WorldNormalOutput"
+    world_normal_output.format.file_format = "OPEN_EXR"
+    world_normal_output.format.color_depth = "32"
+    world_normal_output.file_slots.values()[0].path = file_prefix
+
+    links.new(rl.outputs["Normal"], world_normal_output.inputs["Image"])
+

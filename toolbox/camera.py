@@ -6,11 +6,14 @@ import numpy as np
 from mathutils import Euler, Matrix, Vector
 
 
-def init_camera(camera_lens: int = 35, camera_sensor_width: int = 32):
+def init_camera(camera_lens: int = 50, camera_fov: int = 40, camera_sensor_width: int = 40):
     bpy.ops.object.camera_add(location=(0, 0, 0))
     camera = bpy.context.object
     camera.data.lens = camera_lens
     camera.data.sensor_width = camera_sensor_width
+    # camera.data.lens_unit = "FOV"
+    # camera.data.angle = np.deg2rad(camera_fov)
+    # camera.data.sensor_fit = "AUTO"
     bpy.context.scene.camera = camera
 
     return camera

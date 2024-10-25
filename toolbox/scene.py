@@ -23,6 +23,7 @@ class SceneHandler:
         self.init_camera = init_camera
         self.add_camera = add_camera
         self.init_render_engine = init_render_engine
+        self.scale_mat = None
 
     @property
     def objects(self):
@@ -57,7 +58,7 @@ class SceneHandler:
         output_dir: str,
         width: int,
         height: int,
-        output_types: [Literal["color", "normal", "depth", "albedo", "pbr"]],
+        output_types: [Literal["color", "normal", "depth", "albedo", "pbr", "position", "UV", "alpha", "word_normal"]],
     ):
         os.makedirs(output_dir, exist_ok=True)
         set_color_output(width, height, output_dir)
@@ -72,6 +73,16 @@ class SceneHandler:
             enable_pbr_output(output_dir, attr_name="Roughness", color_mode="RGBA")
             enable_pbr_output(output_dir, attr_name="Base Color", color_mode="RGBA")
             enable_pbr_output(output_dir, attr_name="Metallic", color_mode="RGBA")
+        if "position" in output_types:
+            enable_position_output(output_dir)
+        if "UV" in output_types:
+            enable_uv_output(output_dir)
+        if "alpha" in output_types:
+            enable_alpha_output(output_dir)
+        if "word_normal" in output_types:
+            enable_world_normal_output(output_dir)
+        
+        
 
     def import_object(
         self,
@@ -132,8 +143,9 @@ class SceneHandler:
 
     def normalize_scene(self, range: float = 1.0):
         bbox_min, bbox_max = self.bbox
-        scale = range / (bbox_max - bbox_min).length
-
+        # scale = range / (bbox_max - bbox_min).length
+        scale = range / max(bbox_max - bbox_min)
+        print(scale)
         # Apply scale to objects
         for obj in self.root_objects:
             obj.scale = obj.scale * scale
@@ -144,6 +156,16 @@ class SceneHandler:
         offset = -(bbox_min + bbox_max) / 2
         for obj in self.root_objects:
             obj.matrix_world.translation += offset
+        
+        # import ipdb; ipdb.set_trace()
+
+        # 4x4 matrix for scaling and translation
+        self.scale_mat = [
+            [scale, 0, 0, offset[0]],
+            [0, scale, 0, offset[1]],
+            [0, 0, scale, offset[2]],
+            [0, 0, 0, 1],
+        ]
 
         bpy.ops.object.select_all(action="DESELECT")
 
